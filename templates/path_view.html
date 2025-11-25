@@ -35,6 +35,20 @@
     .check-icon:hover {
         transform: scale(1.2);
     }
+    .check-icon.fas.fa-circle {
+        color: #000000 !important;
+        font-weight: 900;
+    }
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
 </style>
 {% endblock %}
 
@@ -89,8 +103,9 @@
                         <div class="d-flex align-items-start">
                             <div class="me-3">
                                 {% if resource.id in progress.get(module.index|string, []) %}
-                                <i class="fas fa-check-circle check-icon text-success" 
-                                   onclick="toggleResource('{{ path._id }}', {{ module.index }}, '{{ resource.id }}', this)"></i>
+                                <i class="fas fa-circle check-icon text-dark" 
+                                   onclick="toggleResource('{{ path._id }}', {{ module.index }}, '{{ resource.id }}', this)"
+                                   style="font-size: 1.5rem;"></i>
                                 {% else %}
                                 <i class="far fa-circle check-icon text-muted" 
                                    onclick="toggleResource('{{ path._id }}', {{ module.index }}, '{{ resource.id }}', this)"></i>
@@ -146,12 +161,14 @@ function toggleResource(pathId, moduleIndex, resourceId, iconElement) {
     // Optimistic UI update
     if (isCompleted) {
         resourceItem.classList.remove('completed');
-        iconElement.classList.remove('fa-check-circle', 'text-success');
+        iconElement.classList.remove('fas', 'fa-circle', 'text-dark');
         iconElement.classList.add('far', 'fa-circle', 'text-muted');
+        iconElement.style.fontSize = '1.5rem';
     } else {
         resourceItem.classList.add('completed');
         iconElement.classList.remove('far', 'fa-circle', 'text-muted');
-        iconElement.classList.add('fa-check-circle', 'text-success');
+        iconElement.classList.add('fas', 'fa-circle', 'text-dark');
+        iconElement.style.fontSize = '1.5rem';
     }
     
     // Send request to server
@@ -173,11 +190,13 @@ function toggleResource(pathId, moduleIndex, resourceId, iconElement) {
             if (data.is_completed) {
                 resourceItem.classList.add('completed');
                 iconElement.classList.remove('far', 'fa-circle', 'text-muted');
-                iconElement.classList.add('fa-check-circle', 'text-success');
+                iconElement.classList.add('fas', 'fa-circle', 'text-dark');
+                iconElement.style.fontSize = '1.5rem';
             } else {
                 resourceItem.classList.remove('completed');
-                iconElement.classList.remove('fa-check-circle', 'text-success');
+                iconElement.classList.remove('fas', 'fa-circle', 'text-dark');
                 iconElement.classList.add('far', 'fa-circle', 'text-muted');
+                iconElement.style.fontSize = '1.5rem';
             }
             
             // Update progress bar
@@ -187,16 +206,24 @@ function toggleResource(pathId, moduleIndex, resourceId, iconElement) {
                 progressBar.style.width = data.progress + '%';
                 progressText.textContent = data.progress + '%';
             }
+            
+            // Check if course is 100% complete
+            if (data.progress >= 100) {
+                // Show success message
+                showCompletionMessage();
+            }
         } else {
             // Revert on error
             if (isCompleted) {
                 resourceItem.classList.add('completed');
                 iconElement.classList.remove('far', 'fa-circle', 'text-muted');
-                iconElement.classList.add('fa-check-circle', 'text-success');
+                iconElement.classList.add('fas', 'fa-circle', 'text-dark');
+                iconElement.style.fontSize = '1.5rem';
             } else {
                 resourceItem.classList.remove('completed');
-                iconElement.classList.remove('fa-check-circle', 'text-success');
+                iconElement.classList.remove('fas', 'fa-circle', 'text-dark');
                 iconElement.classList.add('far', 'fa-circle', 'text-muted');
+                iconElement.style.fontSize = '1.5rem';
             }
         }
     })
@@ -206,13 +233,41 @@ function toggleResource(pathId, moduleIndex, resourceId, iconElement) {
         if (isCompleted) {
             resourceItem.classList.add('completed');
             iconElement.classList.remove('far', 'fa-circle', 'text-muted');
-            iconElement.classList.add('fa-check-circle', 'text-success');
+            iconElement.classList.add('fas', 'fa-circle', 'text-dark');
+            iconElement.style.fontSize = '1.5rem';
         } else {
             resourceItem.classList.remove('completed');
-            iconElement.classList.remove('fa-check-circle', 'text-success');
+            iconElement.classList.remove('fas', 'fa-circle', 'text-dark');
             iconElement.classList.add('far', 'fa-circle', 'text-muted');
+            iconElement.style.fontSize = '1.5rem';
         }
     });
+}
+
+function showCompletionMessage() {
+    // Create success alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3 shadow-lg';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '450px';
+    alertDiv.style.animation = 'slideDown 0.5s ease-out';
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-trophy fa-3x me-3 text-warning"></i>
+            <div class="flex-grow-1">
+                <h4 class="mb-1 fw-bold">Congratulations! 🎉</h4>
+                <p class="mb-0">You have completed "<strong>{{ path.topic }}</strong>" learning path!</p>
+                <small class="text-muted">Redirecting to dashboard...</small>
+            </div>
+            <button type="button" class="btn-close ms-2" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    // Redirect to dashboard after 3 seconds
+    setTimeout(() => {
+        window.location.href = '{{ url_for("dashboard") }}';
+    }, 3000);
 }
 </script>
 {% endblock %}
