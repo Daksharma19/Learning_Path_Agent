@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}{{ path.topic }} - Learning Path Agent{% endblock %}
+
+{% block extra_css %}
+<style>
+    .module-card {
+        margin-bottom: 2rem;
+        border-left: 4px solid var(--primary-color);
+    }
+    .resource-item {
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    .resource-item:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateX(5px);
+    }
+    .resource-item.completed {
+        background-color: #f0fdf4;
+        border-color: var(--success-color);
+    }
+    .resource-item.completed .resource-title {
+        text-decoration: line-through;
+        color: #6b7280;
+    }
+    .check-icon {
+        cursor: pointer;
+        font-size: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    .check-icon:hover {
+        transform: scale(1.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-light mb-3">
+        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h2 class="card-title mb-2">
+                    <i class="fas fa-book me-2 text-primary"></i>{{ path.topic }}
+                </h2>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-calendar me-1"></i>
+                    Created: {{ path.created_at.strftime('%B %d, %Y') if path.created_at else 'Recent' }}
+                </p>
+            </div>
+            <div class="text-end">
+                <div class="mb-2">
+                    <h4 class="mb-0">{{ progress_percent }}%</h4>
+                    <small class="text-muted">Complete</small>
+                </div>
+                <div class="progress" style="width: 200px;">
+                    <div class="progress-bar" role="progressbar" style="width: {{ progress_percent }}%">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        {% for module in path.modules %}
+        <div class="card module-card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-circle text-primary me-2" style="font-size: 0.5rem;"></i>
+                    Module {{ module.index + 1 }}: {{ module.title }}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if module.resources %}
+                    {% for resource in module.resources %}
+                    <div class="resource-item {% if resource.id in progress.get(module.index|string, []) %}completed{% endif %}" 
+                         data-resource-id="{{ resource.id }}" data-module-index="{{ module.index }}">
+                        <div class="d-flex align-items-start">
+                            <div class="me-3">
+                                {% if resource.id in progress.get(module.index|string, []) %}
+                                <i class="fas fa-check-circle check-icon text-success" 
+                                   onclick="toggleResource('{{ path._id }}', {{ module.index }}, '{{ resource.id }}', this)"></i>
+                                {% else %}
+                                <i class="far fa-circle check-icon text-muted" 
+                                   onclick="toggleResource('{{ path._id }}', {{ module.index }}, '{{ resource.id }}', this)"></i>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                {% if resource.type == 'wikipedia' %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fab fa-wikipedia-w text-primary me-2"></i>
+                                    <h6 class="mb-0 resource-title">{{ resource.title }}</h6>
+                                </div>
+                                <p class="text-muted small mb-2">{{ resource.summary }}</p>
+                                <a href="{{ resource.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-external-link-alt me-1"></i>Read Article
+                                </a>
+                                {% elif resource.type == 'youtube' %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fab fa-youtube text-danger me-2"></i>
+                                    <h6 class="mb-0 resource-title">{{ resource.title }}</h6>
+                                </div>
+                                {% if resource.channel %}
+                                <p class="text-muted small mb-2">
+                                    <i class="fas fa-user me-1"></i>{{ resource.channel }}
+                                    {% if resource.duration %}
+                                    <span class="ms-2"><i class="fas fa-clock me-1"></i>{{ resource.duration }}</span>
+                                    {% endif %}
+                                </p>
+                                {% endif %}
+                                <a href="{{ resource.url }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-play me-1"></i>Watch Video
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <p class="text-muted">No resources available for this module.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleResource(pathId, moduleIndex, resourceId, iconElement) {
+    const resourceItem = iconElement.closest('.resource-item');
+    const isCompleted = resourceItem.classList.contains('completed');
+    
+    // Optimistic UI update
+    if (isCompleted) {
+        resourceItem.classList.remove('completed');
+        iconElement.classList.remove('fa-check-circle', 'text-success');
+        iconElement.classList.add('far', 'fa-circle', 'text-muted');
+    } else {
+        resourceItem.classList.add('completed');
+        iconElement.classList.remove('far', 'fa-circle', 'text-muted');
+        iconElement.classList.add('fa-check-circle', 'text-success');
+    }
+    
+    // Send request to server
+    fetch('/complete_resource', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            path_id: pathId,
+            module_index: moduleIndex,
+            resource_id: resourceId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update UI based on server response
+            if (data.is_completed) {
+                resourceItem.classList.add('completed');
+                iconElement.classList.remove('far', 'fa-circle', 'text-muted');
+                iconElement.classList.add('fa-check-circle', 'text-success');
+            } else {
+                resourceItem.classList.remove('completed');
+                iconElement.classList.remove('fa-check-circle', 'text-success');
+                iconElement.classList.add('far', 'fa-circle', 'text-muted');
+            }
+            
+            // Update progress bar
+            const progressBar = document.querySelector('.progress-bar');
+            const progressText = document.querySelector('.text-end h4');
+            if (progressBar && progressText) {
+                progressBar.style.width = data.progress + '%';
+                progressText.textContent = data.progress + '%';
+            }
+        } else {
+            // Revert on error
+            if (isCompleted) {
+                resourceItem.classList.add('completed');
+                iconElement.classList.remove('far', 'fa-circle', 'text-muted');
+                iconElement.classList.add('fa-check-circle', 'text-success');
+            } else {
+                resourceItem.classList.remove('completed');
+                iconElement.classList.remove('fa-check-circle', 'text-success');
+                iconElement.classList.add('far', 'fa-circle', 'text-muted');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Revert on error
+        if (isCompleted) {
+            resourceItem.classList.add('completed');
+            iconElement.classList.remove('far', 'fa-circle', 'text-muted');
+            iconElement.classList.add('fa-check-circle', 'text-success');
+        } else {
+            resourceItem.classList.remove('completed');
+            iconElement.classList.remove('fa-check-circle', 'text-success');
+            iconElement.classList.add('far', 'fa-circle', 'text-muted');
+        }
+    });
+}
+</script>
+{% endblock %}
+

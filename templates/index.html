@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Learning Path Agent{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center text-white py-5">
+        <h1 class="display-3 fw-bold mb-4">
+            <i class="fas fa-brain me-3"></i>AI-Powered Learning Path Agent
+        </h1>
+        <p class="lead mb-5">
+            Transform any topic into a structured, step-by-step learning journey. 
+            Get curated resources, track your progress, and master new subjects efficiently.
+        </p>
+        <div class="d-flex gap-3 justify-content-center">
+            {% if not current_user.is_authenticated %}
+            <a href="{{ url_for('signup') }}" class="btn btn-light btn-lg px-5">
+                <i class="fas fa-user-plus me-2"></i>Get Started
+            </a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg px-5">
+                <i class="fas fa-sign-in-alt me-2"></i>Login
+            </a>
+            {% else %}
+            <a href="{{ url_for('generate') }}" class="btn btn-light btn-lg px-5">
+                <i class="fas fa-plus-circle me-2"></i>Create Learning Path
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light btn-lg px-5">
+                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center p-4">
+            <div class="card-body">
+                <i class="fas fa-sitemap fa-3x text-primary mb-3"></i>
+                <h4 class="card-title">Structured Learning</h4>
+                <p class="card-text">
+                    Break down complex topics into manageable modules with logical progression
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center p-4">
+            <div class="card-body">
+                <i class="fas fa-book-open fa-3x text-primary mb-3"></i>
+                <h4 class="card-title">Curated Resources</h4>
+                <p class="card-text">
+                    Automatically gather high-quality Wikipedia articles and YouTube videos
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center p-4">
+            <div class="card-body">
+                <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                <h4 class="card-title">Progress Tracking</h4>
+                <p class="card-text">
+                    Track your learning journey with visual progress indicators
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
